@@ -2,6 +2,8 @@ import { createContext, useState } from "react";
 
 const AppContext = createContext()
 
+export { AppContext }
+
 export const AppContextProvider = (props) => {
 
     const [searchFilter, setSearchfilter] = useState({
