@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from 'react'
+import React, { useContext, useMemo } from 'react'
 import { useParams } from 'react-router-dom'
 import { AppContext } from '../context/AppContext'
 import { assets } from '../assets/assets'
@@ -8,15 +8,12 @@ import Footer from '../components/Footer'
 const ApplyJob = () => {
   const { id } = useParams()
   const { jobs } = useContext(AppContext)
-  const [jobData, setJobData] = useState(null)
 
-  useEffect(() => {
+  const jobData = useMemo(() => {
     if (jobs && jobs.length > 0) {
-      const job = jobs.find(j => j._id === id)
-      if (job) {
-        setJobData(job)
-      }
+      return jobs.find(j => j._id === id) || null
     }
+    return null
   }, [id, jobs])
 
   if (!jobData) {
