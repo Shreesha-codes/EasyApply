@@ -1,0 +1,256 @@
+Create a complete Node.js + Express + MongoDB backend for a Job Portal application with the following specifications:
+
+=== TECHNOLOGY STACK ===
+- Node.js with Express.js
+- MongoDB with Mongoose
+- Clerk for authentication (webhook integration)
+- Cloudinary for file uploads (resume, company logos)
+- JWT for additional token management
+- Bcrypt for password hashing
+- CORS enabled
+- Multer for file handling
+- Svix for webhook verification
+
+=== DATABASE MODELS ===
+
+1. Company Model:
+   - name (String, required)
+   - email (String, required, unique)
+   - password (String, required, hashed)
+   - image (String, Cloudinary URL)
+   - description (String)
+   - location (String)
+   - createdAt (Date)
+
+2. Job Model:
+   - title (String, required)
+   - description (String, required, HTML content)
+   - requirements (String, HTML content)
+   - responsibilities (String, HTML content)
+   - location (String, required)
+   - category (String, required)
+   - level (String: Entry Level, Mid Level, Senior Level, Lead)
+   - salary (String)
+   - companyId (ObjectId, ref: 'Company')
+   - date (Date, default: Date.now)
+   - applicants (Number, default: 0)
+   - visible (Boolean, default: true)
+   - createdAt (Date)
+
+3. Application Model:
+   - jobId (ObjectId, ref: 'Job', required)
+   - userId (String, Clerk userId, required)
+   - companyId (ObjectId, ref: 'Company', required)
+   - name (String, required)
+   - email (String, required)
+   - resume (String, Cloudinary URL, required)
+   - coverLetter (String)
+   - status (String: Pending, Accepted, Rejected, default: Pending)
+   - appliedDate (Date, default: Date.now)
+   - imgSrc (String, profile image)
+
+4. User Model (Job Seeker):
+   - clerkId (String, unique, required)
+   - name (String, required)
+   - email (String, required, unique)
+   - resume (String, Cloudinary URL)
+   - image (String)
+   - createdAt (Date)
+
+=== API ENDPOINTS REQUIRED ===
+
+COMPANY/RECRUITER ROUTES:
+POST   /api/company/register          - Register new company
+POST   /api/company/login             - Company login
+GET    /api/company/profile           - Get company profile (auth required)
+PUT    /api/company/profile           - Update company profile (auth required)
+
+JOB ROUTES:
+POST   /api/jobs                      - Create new job (company auth required)
+GET    /api/jobs                      - Get all jobs (with filters: title, location, category)
+GET    /api/jobs/:id                  - Get single job details
+PUT    /api/jobs/:id                  - Update job (company auth required)
+DELETE /api/jobs/:id                  - Delete job (company auth required)
+GET    /api/jobs/company/:companyId   - Get jobs by company
+
+APPLICATION ROUTES:
+POST   /api/applications              - Submit job application (with file upload)
+GET    /api/applications/user/:userId - Get user's applications (Clerk auth)
+GET    /api/applications/job/:jobId   - Get applications for a job (company auth)
+GET    /api/applications/:id          - Get single application details
+PUT    /api/applications/:id/status   - Update application status (accept/reject, company auth)
+DELETE /api/applications/:id          - Delete application
+
+USER ROUTES:
+GET    /api/users/profile             - Get user profile (Clerk auth)
+PUT    /api/users/profile             - Update user profile (Clerk auth)
+POST   /api/users/resume              - Upload/update resume (Clerk auth, file upload)
+
+WEBHOOK ROUTES:
+POST   /api/webhooks/clerk            - Clerk webhook for user sync (create/update/delete users)
+
+DASHBOARD/STATS ROUTES:
+GET    /api/company/dashboard         - Get company dashboard stats (total jobs, applicants, recent applications)
+GET    /api/company/manage-jobs       - Get all company jobs with applicant count
+
+=== FEATURES & FUNCTIONALITY ===
+
+1. Authentication & Authorization:
+   - Clerk integration for job seekers (via webhooks)
+   - JWT-based authentication for companies/recruiters
+   - Middleware to protect routes (verify Clerk tokens and company JWT)
+   - Svix webhook verification for Clerk webhooks
+
+2. Job Management:
+   - CRUD operations for jobs
+   - Search/filter jobs by title, location, category
+   - Track applicant count per job
+   - Soft delete (visible: false instead of actual deletion)
+
+3. Application System:
+   - File upload for resume (PDF) to Cloudinary
+   - Track application status (Pending, Accepted, Rejected)
+   - Prevent duplicate applications (same user + job)
+   - Increment job applicant count on new application
+
+4. File Upload:
+   - Cloudinary integration for resume storage
+   - Multer middleware for handling multipart/form-data
+   - Support PDF files for resumes
+   - Store URLs in database
+
+5. Dashboard & Analytics:
+   - Company dashboard with stats
+   - Total jobs posted
+   - Total applicants across all jobs
+   - Recent applications list
+   - Average applicants per job
+
+6. Data Validation:
+   - Validate required fields
+   - Email format validation
+   - File type validation (PDF for resumes)
+   - Proper error handling with meaningful messages
+
+=== MIDDLEWARE NEEDED ===
+
+1. authMiddleware.js:
+   - verifyClerkToken: Verify Clerk JWT for job seekers
+   - verifyCompanyToken: Verify company JWT token
+   - Combined middleware that can handle both
+
+2. upload.js:
+   - Multer configuration for file uploads
+   - File type validation
+   - File size limits
+
+3. errorHandler.js:
+   - Global error handling middleware
+   - Proper error responses with status codes
+
+=== ENVIRONMENT VARIABLES (.env) ===
+PORT=5000
+MONGODB_URI=mongodb://localhost:27017/jobportal
+JWT_SECRET=your_jwt_secret_key
+CLERK_WEBHOOK_SECRET=your_clerk_webhook_secret
+CLOUDINARY_CLOUD_NAME=your_cloud_name
+CLOUDINARY_API_KEY=your_api_key
+CLOUDINARY_API_SECRET=your_api_secret
+
+=== PROJECT STRUCTURE ===
+server/
+├── server.js                 (Main entry point)
+├── package.json
+├── .env
+├── config/
+│   └── db.js                (MongoDB connection)
+├── models/
+│   ├── Company.js
+│   ├── Job.js
+│   ├── Application.js
+│   └── User.js
+├── controllers/
+│   ├── companyController.js
+│   ├── jobController.js
+│   ├── applicationController.js
+│   ├── userController.js
+│   └── webhookController.js
+├── routes/
+│   ├── companyRoutes.js
+│   ├── jobRoutes.js
+│   ├── applicationRoutes.js
+│   ├── userRoutes.js
+│   └── webhookRoutes.js
+├── middleware/
+│   ├── authMiddleware.js
+│   ├── upload.js
+│   └── errorHandler.js
+└── utils/
+    └── cloudinary.js        (Cloudinary config)
+
+=== SPECIAL REQUIREMENTS ===
+
+1. Clerk Webhook Handler:
+   - Create/update user in database when Clerk webhook fires
+   - Handle user.created, user.updated, user.deleted events
+   - Verify webhook signature using Svix
+   - Extract user data from webhook payload
+
+2. Resume Upload Flow:
+   - Accept multipart/form-data
+   - Upload to Cloudinary
+   - Store URL in database
+   - Return public URL to frontend
+
+3. Search & Filter:
+   - Case-insensitive search for job title
+   - Filter by location (exact match or contains)
+   - Filter by category
+   - Combine multiple filters
+
+4. Application Status Update:
+   - Only company that posted the job can update status
+   - Notify user (future enhancement)
+   - Track status change history (optional)
+
+5. Security:
+   - Hash company passwords with bcrypt (salt rounds: 10)
+   - Validate JWT tokens
+   - CORS configuration for frontend origin
+   - Sanitize user inputs
+   - Rate limiting (optional)
+
+6. Error Handling:
+   - 400: Bad Request (validation errors)
+   - 401: Unauthorized (missing/invalid token)
+   - 403: Forbidden (insufficient permissions)
+   - 404: Not Found (resource doesn't exist)
+   - 500: Internal Server Error
+
+=== ADDITIONAL NOTES ===
+- Use async/await with try-catch blocks
+- Use Express Router for modular routing
+- Add proper logging (console.log for development)
+- Populate referenced documents where needed (companyId in jobs, jobId in applications)
+- Return consistent JSON responses: { success: boolean, message: string, data: object }
+- Add pagination for job listings (optional: limit, skip)
+- Sort jobs by date (newest first)
+- CORS should allow credentials and proper headers
+
+=== SAMPLE API RESPONSES ===
+
+Success Response:
+{
+  "success": true,
+  "message": "Operation successful",
+  "data": { ...resource }
+}
+
+Error Response:
+{
+  "success": false,
+  "message": "Error description",
+  "error": "Detailed error message"
+}
+
+Now generate the complete backend code with all files including server.js, models, controllers, routes, middleware, and utilities following these specifications.
